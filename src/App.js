@@ -36,10 +36,10 @@ class App extends Component {
     return (
       <div className="App">
         <GoogleLogin />
-        <form onSubmit={this.handleSubmit}>
+        {/* <form onSubmit={this.handleSubmit}>
           <input type="text" value={this.state.id} onChange={this.handleChange}></input>
           <input type="submit" value="Submit" />
-        </form>
+        </form> */}
         <ul>{this.videosArray}</ul>
         {this.nextPageButton}
       </div >

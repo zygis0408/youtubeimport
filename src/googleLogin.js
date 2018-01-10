@@ -8,12 +8,12 @@ class GoogleLogin extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            disabled: true
+            disabled: true,
+            videos: []
         };
     }
 
     componentDidMount() {
-        const { socialId, scope, fetchBasicProfile } = this.props;
         ((d, s, id, callback) => {
             let js, gs = d.getElementsByTagName(s)[0];
             if (d.getElementById(id)) {
@@ -27,34 +27,77 @@ class GoogleLogin extends Component {
                 js.onload = callback;
             }
         })(document, 'script', 'google-platform', () => {
-            window.gapi.load('auth2', () => {
+            window.gapi.load('client:auth2', () => {
                 this.setState({
                     disabled: false
                 });
                 if (!window.gapi.auth2.getAuthInstance()) {
                     window.gapi.auth2.init({
-                        client_id: socialId,
-                        fetch_basic_profile: fetchBasicProfile,
-                        scope: scope
+                        client_id: '1001607640957-42ssi9hidvrraae5gpklcsdh6l4qvpai.apps.googleusercontent.com',
+                        scope: 'https://www.googleapis.com/auth/youtube.readonly'
                     });
                 }
             });
         });
     }
 
-    // checkLoginState(response) {
-    //     if (auth2.isSignedIn.get()) {
-    //         const profile = auth2.currentUser.get().getBasicProfile();
-    //     } else {
-    //         if (this.props.responseHandler) {
-    //             this.props.responseHandler({ status: response.status });
-    //         }
-    //     }
-    // }
+    checkLoginState(response) {
+        if (window.gapi.auth2.isSignedIn.get()) {
+            const profile = window.gapi.auth2.currentUser.get().getBasicProfile();
+        } else {
+            if (this.props.responseHandler) {
+                this.props.responseHandler({ status: response.status });
+            }
+        }
+    }
 
     clickHandler() {
         const auth2 = window.gapi.auth2.getAuthInstance();
-        auth2.signIn().then(googleUser => this.props.responseHandler(googleUser));
+        console.log(auth2);
+        // auth2.signIn();
+        // auth2.disconnect();
+        // console.log(auth2.currentUser.get().getBasicProfile());
+        console.log(auth2.isSignedIn.get());
+        if (auth2.isSignedIn.get()) {
+            window.gapi.client.request({
+                'method': 'GET',
+                'path': '/youtube/v3/channels',
+                'params': {
+                    'mine': 'true',
+                    'part': 'snippet,contentDetails'
+                }
+            }).execute(response => {
+                // console.log(response);
+                try {
+                    // auth2.signOut();
+                    if (response.items[0].contentDetails.relatedPlaylists.uploads !== undefined) {
+                        // console.log(response.items[0].contentDetails.relatedPlaylists.uploads);
+                        window.gapi.client.request({
+                            'method': 'GET',
+                            'path': '/youtube/v3/playlistItems',
+                            'params': {
+                                'playlistId': response.items[0].contentDetails.relatedPlaylists.uploads,
+                                'part': 'snippet,contentDetails,status',
+                                'maxResults': '50'
+                            }
+                        }).execute(response2 => {
+                            console.log(response2)
+                            // auth2.signIn();
+                            var link = "https://www.youtube.com/watch?v=";
+                            this.setState({
+                                videos: response2.items.map(thumb => <li key={thumb.id}><a href={link
+                                    + thumb.snippet.resourceId.videoId}>{thumb.snippet.title}
+                                    <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>)
+                            })
+                            
+                        })
+                    }
+                } catch (error) {
+                    console.log(error);
+                }
+                // else console.log('No uploads');
+            })
+        }
     }
 
     render() {
@@ -66,17 +109,16 @@ class GoogleLogin extends Component {
         props.disabled = this.state.disabled || props.disabled;
 
         return (
-            <button {...props} onClick={this.clickHandler.bind(this)}>
-                {children}
-                {buttonText}
+            <div>
+                <button onClick={this.clickHandler.bind(this)}>
+                    Log in with Google
             </button>
+                <ul>
+                    {this.state.videos}
+                </ul>
+            </div>
         )
     }
 }
 
 export default GoogleLogin;
-
-GoogleLogin.defaultProps = {
-    fetchBasicProfile: false,
-    scope: 'profile'
-}
