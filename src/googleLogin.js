@@ -3,6 +3,8 @@
 // discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest']
 
 import React, { Component } from 'react';
+import './googleLogin.css';
+// import InfiniteScroll from 'react-infinite-scroller';
 
 class GoogleLogin extends Component {
     constructor(props) {
@@ -87,12 +89,12 @@ class GoogleLogin extends Component {
                             this.setState({
                                 videos: response2.items.map(thumb => {
                                     if (thumb.status.privacyStatus === 'private') {
-                                        return <li key={thumb.id}><a href={link
+                                        return <li className='PlaylistItem' key={thumb.id}><a href={link
                                             + thumb.snippet.resourceId.videoId}>{thumb.snippet.title} THIS VIDEO IS PRIVATE
                                             <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
                                     }
                                     else {
-                                        return <li key={thumb.id}><a href={link
+                                        return <li className='PlaylistItem' key={thumb.id}><a className='ItemTitle' href={link
                                             + thumb.snippet.resourceId.videoId}>{thumb.snippet.title}
                                             <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
                                     }
@@ -124,9 +126,11 @@ class GoogleLogin extends Component {
                 <button onClick={this.clickHandler.bind(this)}>
                     Log in with Google
             </button>
-                <ul>
-                    {this.state.videos}
-                </ul>
+                <div>
+                    <ul>
+                        {this.state.videos}
+                    </ul>
+                </div>
             </div>
         )
     }
