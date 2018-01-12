@@ -44,6 +44,11 @@ class GoogleLogin extends Component {
                     window.gapi.auth2.init({
                         client_id: '1001607640957-42ssi9hidvrraae5gpklcsdh6l4qvpai.apps.googleusercontent.com',
                         scope: 'https://www.googleapis.com/auth/youtube.readonly'
+                    })
+                    .then((authObject)=>{
+                        if (authObject.isSignedIn.get()){
+                            this.getChannelDetails();
+                        }
                     });
                 }
             });
