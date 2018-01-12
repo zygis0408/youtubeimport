@@ -14,7 +14,8 @@ class GoogleLogin extends Component {
             videos: [],
             nextPageToken: '',
             playlistId: '',
-            loading: false
+            loading: false,
+            loggedIn: false
         };
         this.handleScroll = this.handleScroll.bind(this);
 
@@ -45,15 +46,15 @@ class GoogleLogin extends Component {
                         client_id: '1001607640957-42ssi9hidvrraae5gpklcsdh6l4qvpai.apps.googleusercontent.com',
                         scope: 'https://www.googleapis.com/auth/youtube.readonly'
                     })
-                    .then((authObject)=>{
-                        if (authObject.isSignedIn.get()){
-                            this.getChannelDetails();
-                        }
-                    });
+                        .then((authObject) => {
+                            if (authObject.isSignedIn.get()) {
+                                this.getChannelDetails();
+                                this.setState({loggedIn:true});
+                            }
+                        });
                 }
             });
         });
-        // console.log(window.gapi.auth2.getAuthInstance());
     }
 
     checkLoginState(response) {
@@ -69,24 +70,32 @@ class GoogleLogin extends Component {
     googleLoginHandler() {
         window.gapi.auth2.getAuthInstance().signIn()
             .then(() => {
-                this.getChannelDetails()
+                this.getChannelDetails();
+                this.setState({loggedIn: true});
             });
     }
 
+    logout(){
+        window.gapi.auth2.getAuthInstance().signOut();
+        this.setState({loggedIn: false, playlistId: '', videos: []});
+    }
     getChannelDetails() {
         window.gapi.client.request({
             'method': 'GET',
             'path': '/youtube/v3/channels',
             'params': {
                 'mine': 'true',
-                'part': 'snippet,contentDetails'
+                'part': 'snippet,contentDetails',
+                'metadataHeaders': Math.random()
             }
         }).execute(channelListResponse => {
+            console.log(channelListResponse)
             this.getPlaylistItems(channelListResponse.items[0].contentDetails.relatedPlaylists.uploads);
         });
     }
 
     getPlaylistItems(playlistId) {
+        console.log(playlistId);
         this.setState({ playlistId: playlistId });
         window.gapi.client.request({
             'method': 'GET',
@@ -117,7 +126,7 @@ class GoogleLogin extends Component {
 
         })
     }
-    
+
     handleScroll(event) {
         // conslog(window.pageYOffset);
         if (document.body.clientHeight - window.innerHeight - window.pageYOffset < 0 && !this.state.loading && this.state.nextPageToken !== '') {
@@ -176,9 +185,9 @@ class GoogleLogin extends Component {
 
         return (
             <div>
-                <button onClick={this.googleLoginHandler.bind(this)}>
-                    Log in with Google
-            </button>
+                {this.state.loggedIn ?
+                <button onClick={this.logout.bind(this)}>Log out</button>
+                :<button onClick={this.googleLoginHandler.bind(this)}>Log in with Google</button>}
                 <div>
                     <ul>
                         {this.state.videos}
