@@ -48,6 +48,7 @@ class GoogleLogin extends Component {
                 }
             });
         });
+        // console.log(window.gapi.auth2.getAuthInstance());
     }
 
     checkLoginState(response) {
@@ -60,68 +61,58 @@ class GoogleLogin extends Component {
         }
     }
 
-    clickHandler() {
-        const auth2 = window.gapi.auth2.getAuthInstance();
-        console.log(auth2);
-        // auth2.signIn();
-        // auth2.disconnect();
-        // console.log(auth2.currentUser.get().getBasicProfile());
-        console.log(auth2.isSignedIn.get());
-        if (auth2.isSignedIn.get()) {
-            window.gapi.client.request({
-                'method': 'GET',
-                'path': '/youtube/v3/channels',
-                'params': {
-                    'mine': 'true',
-                    'part': 'snippet,contentDetails'
-                }
-            }).execute(response => {
-                console.log(response);
-                try {
-                    // auth2.signOut();
-                    if (response.items[0].contentDetails.relatedPlaylists.uploads !== undefined) {
-                        // console.log(response.items[0].contentDetails.relatedPlaylists.uploads);
-                        this.setState({ playlistId: response.items[0].contentDetails.relatedPlaylists.uploads });
-                        window.gapi.client.request({
-                            'method': 'GET',
-                            'path': '/youtube/v3/playlistItems',
-                            'params': {
-                                'playlistId': this.state.playlistId,
-                                'part': 'snippet,contentDetails,status',
-                                'maxResults': '50'
-                            }
-                        }).execute(response2 => {
-                            console.log(response2)
-                            // auth2.signIn();
-                            this.setState({ nextPageToken: response2.nextPageToken })
-                            var link = "https://www.youtube.com/watch?v=";
-                            this.setState({
-                                videos: response2.items.map(thumb => {
-                                    if (thumb.status.privacyStatus === 'private') {
-                                        return <li className='PlaylistItem' key={thumb.id}><a className='ItemTitle' href={link
-                                            + thumb.snippet.resourceId.videoId}>{thumb.snippet.title} THIS VIDEO IS PRIVATE
-                                            <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
-                                    }
-                                    else {
-                                        return <li className='PlaylistItem' key={thumb.id}><a className='ItemTitle' href={link
-                                            + thumb.snippet.resourceId.videoId}>{thumb.snippet.title}
-                                            <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
-                                    }
-                                })
-                            })
-
-                        })
-                    }
-                } catch (error) {
-                    console.log(error);
-                }
-            })
-        }
-        else {
-            auth2.signIn();
-        }
+    googleLoginHandler() {
+        window.gapi.auth2.getAuthInstance().signIn()
+            .then(() => {
+                this.getChannelDetails()
+            });
     }
 
+    getChannelDetails() {
+        window.gapi.client.request({
+            'method': 'GET',
+            'path': '/youtube/v3/channels',
+            'params': {
+                'mine': 'true',
+                'part': 'snippet,contentDetails'
+            }
+        }).execute(channelListResponse => {
+            this.getPlaylistItems(channelListResponse.items[0].contentDetails.relatedPlaylists.uploads);
+        });
+    }
+
+    getPlaylistItems(playlistId) {
+        this.setState({ playlistId: playlistId });
+        window.gapi.client.request({
+            'method': 'GET',
+            'path': '/youtube/v3/playlistItems',
+            'params': {
+                'playlistId': this.state.playlistId,
+                'part': 'snippet,contentDetails,status',
+                'maxResults': '50'
+            }
+        }).execute(itemListResponse => {
+            console.log(itemListResponse);
+            this.setState({ nextPageToken: itemListResponse.nextPageToken })
+            var link = "https://www.youtube.com/watch?v=";
+            this.setState({
+                videos: itemListResponse.items.map(thumb => {
+                    if (thumb.status.privacyStatus === 'private') {
+                        return <li className='PlaylistItem' key={thumb.id}><a className='ItemTitle' href={link
+                            + thumb.snippet.resourceId.videoId}>{thumb.snippet.title} THIS VIDEO IS PRIVATE
+                            <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
+                    }
+                    else {
+                        return <li className='PlaylistItem' key={thumb.id}><a className='ItemTitle' href={link
+                            + thumb.snippet.resourceId.videoId}>{thumb.snippet.title}
+                            <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
+                    }
+                })
+            })
+
+        })
+    }
+    
     handleScroll(event) {
         // conslog(window.pageYOffset);
         if (document.body.clientHeight - window.innerHeight - window.pageYOffset < 0 && !this.state.loading && this.state.nextPageToken !== '') {
@@ -180,7 +171,7 @@ class GoogleLogin extends Component {
 
         return (
             <div>
-                <button onClick={this.clickHandler.bind(this)}>
+                <button onClick={this.googleLoginHandler.bind(this)}>
                     Log in with Google
             </button>
                 <div>
