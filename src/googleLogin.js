@@ -11,11 +11,18 @@ class GoogleLogin extends Component {
         super(props);
         this.state = {
             disabled: true,
-            videos: []
+            videos: [],
+            nextPageToken: '',
+            playlistId: '',
+            loading: false
         };
+        this.handleScroll = this.handleScroll.bind(this);
+
     }
 
     componentDidMount() {
+        window.addEventListener('scroll', this.handleScroll);
+
         ((d, s, id, callback) => {
             let js, gs = d.getElementsByTagName(s)[0];
             if (d.getElementById(id)) {
@@ -74,17 +81,19 @@ class GoogleLogin extends Component {
                     // auth2.signOut();
                     if (response.items[0].contentDetails.relatedPlaylists.uploads !== undefined) {
                         // console.log(response.items[0].contentDetails.relatedPlaylists.uploads);
+                        this.setState({ playlistId: response.items[0].contentDetails.relatedPlaylists.uploads });
                         window.gapi.client.request({
                             'method': 'GET',
                             'path': '/youtube/v3/playlistItems',
                             'params': {
-                                'playlistId': response.items[0].contentDetails.relatedPlaylists.uploads,
+                                'playlistId': this.state.playlistId,
                                 'part': 'snippet,contentDetails,status',
                                 'maxResults': '50'
                             }
                         }).execute(response2 => {
                             console.log(response2)
                             // auth2.signIn();
+                            this.setState({ nextPageToken: response2.nextPageToken })
                             var link = "https://www.youtube.com/watch?v=";
                             this.setState({
                                 videos: response2.items.map(thumb => {
@@ -111,6 +120,54 @@ class GoogleLogin extends Component {
         else {
             auth2.signIn();
         }
+    }
+
+    handleScroll(event) {
+        // conslog(window.pageYOffset);
+        if (document.body.clientHeight - window.innerHeight - window.pageYOffset < 0 && !this.state.loading && this.state.nextPageToken !== '') {
+            this.setState({ loading: true });
+            this.loadNextPage();
+        }
+    }
+
+    loadNextPage() {
+        try {
+            window.gapi.client.request({
+                'method': 'GET',
+                'path': '/youtube/v3/playlistItems',
+                'params': {
+                    'playlistId': this.state.playlistId,
+                    'part': 'snippet,contentDetails,status',
+                    'maxResults': '50',
+                    'pageToken': this.state.nextPageToken
+                }
+            }).execute(response2 => {
+                if (response2.nextPageToken === undefined) {
+                    this.setState({ nextPageToken: '' });
+                }
+                else {
+                    this.setState({ nextPageToken: response2.nextPageToken });
+                }
+                var link = "https://www.youtube.com/watch?v=";
+                this.setState({
+                    videos: this.state.videos.concat(response2.items.map(thumb => {
+                        if (thumb.status.privacyStatus === 'private') {
+                            return <li key={thumb.id}><a href={link
+                                + thumb.snippet.resourceId.videoId}>{thumb.snippet.title} THIS VIDEO IS PRIVATE
+                                    <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
+                        }
+                        else {
+                            return <li key={thumb.id}><a href={link
+                                + thumb.snippet.resourceId.videoId}>{thumb.snippet.title}
+                                <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
+                        }
+                    }))
+                })
+            })
+        } catch (error) {
+            console.log(error);
+        }
+        this.setState({ loading: false });
     }
 
     render() {
