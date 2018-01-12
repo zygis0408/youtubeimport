@@ -98,7 +98,7 @@ class GoogleLogin extends Component {
                             this.setState({
                                 videos: response2.items.map(thumb => {
                                     if (thumb.status.privacyStatus === 'private') {
-                                        return <li className='PlaylistItem' key={thumb.id}><a href={link
+                                        return <li className='PlaylistItem' key={thumb.id}><a className='ItemTitle' href={link
                                             + thumb.snippet.resourceId.videoId}>{thumb.snippet.title} THIS VIDEO IS PRIVATE
                                             <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
                                     }
@@ -152,12 +152,12 @@ class GoogleLogin extends Component {
                 this.setState({
                     videos: this.state.videos.concat(response2.items.map(thumb => {
                         if (thumb.status.privacyStatus === 'private') {
-                            return <li key={thumb.id}><a href={link
+                            return <li className='PlaylistItem' key={thumb.id}><a className='ItemTitle' href={link
                                 + thumb.snippet.resourceId.videoId}>{thumb.snippet.title} THIS VIDEO IS PRIVATE
                                     <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
                         }
                         else {
-                            return <li key={thumb.id}><a href={link
+                            return <li className='PlaylistItem' key={thumb.id}><a className='ItemTitle' href={link
                                 + thumb.snippet.resourceId.videoId}>{thumb.snippet.title}
                                 <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
                         }
