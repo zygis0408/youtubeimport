@@ -67,7 +67,7 @@ class GoogleLogin extends Component {
                     'part': 'snippet,contentDetails'
                 }
             }).execute(response => {
-                // console.log(response);
+                console.log(response);
                 try {
                     // auth2.signOut();
                     if (response.items[0].contentDetails.relatedPlaylists.uploads !== undefined) {
@@ -85,18 +85,29 @@ class GoogleLogin extends Component {
                             // auth2.signIn();
                             var link = "https://www.youtube.com/watch?v=";
                             this.setState({
-                                videos: response2.items.map(thumb => <li key={thumb.id}><a href={link
-                                    + thumb.snippet.resourceId.videoId}>{thumb.snippet.title}
-                                    <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>)
+                                videos: response2.items.map(thumb => {
+                                    if (thumb.status.privacyStatus === 'private') {
+                                        return <li key={thumb.id}><a href={link
+                                            + thumb.snippet.resourceId.videoId}>{thumb.snippet.title} THIS VIDEO IS PRIVATE
+                                            <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
+                                    }
+                                    else {
+                                        return <li key={thumb.id}><a href={link
+                                            + thumb.snippet.resourceId.videoId}>{thumb.snippet.title}
+                                            <img alt="" src={thumb.snippet.thumbnails.default.url}></img></a></li>
+                                    }
+                                })
                             })
-                            
+
                         })
                     }
                 } catch (error) {
                     console.log(error);
                 }
-                // else console.log('No uploads');
             })
+        }
+        else {
+            auth2.signIn();
         }
     }
 
